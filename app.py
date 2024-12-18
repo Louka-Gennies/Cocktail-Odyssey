@@ -1,11 +1,14 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse  # Add this line
 from sqlalchemy import create_engine, Column, String, Text, ForeignKey, Numeric, UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from pydantic import BaseModel
+from typing import Optional
 import uuid
 
-DATABASE_URL = "sqlite:///./cocktail.db"  
+DATABASE_URL = "postgresql://user:password@db/cocktail_db"  
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -67,45 +70,36 @@ class User(Base):
 
 class CocktailCreate(BaseModel):
     name: str
-    description: str | None = None
-    image: str | None = None
-    recipe: str | None = None
+    description: Optional[str] = None
+    image: Optional[str] = None
+    recipe: Optional[str] = None
     user_id: uuid.UUID
 
 class CocktailResponse(BaseModel):
     id: uuid.UUID
     name: str
-    description: str | None
-    image: str | None
-    recipe: str | None
-
-    class Config:
-        orm_mode = True
+    description: Optional[str]
+    image: Optional[str]
+    recipe: Optional[str]
 
 class IngredientCreate(BaseModel):
     name: str
-    unit: str | None = None
+    unit: Optional[str] = None
 
 class IngredientResponse(BaseModel):
     id: uuid.UUID
     name: str
-    unit: str | None
-
-    class Config:
-        orm_mode = True
+    unit: Optional[str]
 
 class UserCreate(BaseModel):
     email: str
     password: str
-    name: str | None = None
+    name: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
-    name: str | None
-
-    class Config:
-        orm_mode = True
+    name: Optional[str]
 
 class RatingsCreate(BaseModel):
     user_id: uuid.UUID
@@ -118,9 +112,6 @@ class RatingsResponse(BaseModel):
     cocktail_id: uuid.UUID
     rating: float
 
-    class Config:
-        orm_mode = True
-
 class FavoritesCreate(BaseModel):
     user_id: uuid.UUID
     cocktail_id: uuid.UUID
@@ -130,9 +121,6 @@ class FavoritesResponse(BaseModel):
     user_id: uuid.UUID
     cocktail_id: uuid.UUID
 
-    class Config:
-        orm_mode = True
-
 class UserIngredientCreate(BaseModel):
     user_id: uuid.UUID
     ingredient_id: uuid.UUID
@@ -141,9 +129,6 @@ class UserIngredientResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     ingredient_id: uuid.UUID
-
-    class Config:
-        orm_mode = True
 
 class CocktailIngredientCreate(BaseModel):
     cocktail_id: uuid.UUID
@@ -156,11 +141,21 @@ class CocktailIngredientResponse(BaseModel):
     ingredient_id: uuid.UUID
     quantity: float
 
-    class Config:
-        orm_mode = True
-
 # Initialisation de l'application
 app = FastAPI()
+
+# Serve static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Route for the home page
+@app.get("/")
+def read_root():
+    return {"message": "Bienvenue sur l'application Cocktail Odyssey!"}
+
+# Route for the HTML home page
+@app.get("/home")
+def home():
+    return FileResponse("static/index.html")
 
 # Routes pour les cocktails
 @app.get("/cocktails", response_model=list[CocktailResponse])
@@ -174,6 +169,18 @@ def create_cocktail(cocktail: CocktailCreate, db: SessionLocal = Depends(get_db)
     db.commit()
     db.refresh(new_cocktail)
     return new_cocktail
+
+@app.put("/cocktails/{cocktail_id}", response_model=CocktailResponse)
+def update_cocktail(cocktail_id: uuid.UUID, cocktail: CocktailCreate, db: SessionLocal = Depends(get_db)):
+    cocktail_record = db.query(Cocktail).filter(Cocktail.id == cocktail_id).first()
+    if not cocktail_record:
+        raise HTTPException(status_code=404, detail="Cocktail non trouvé")
+    update_data = cocktail.dict()
+    for key, value in update_data.items():
+        setattr(cocktail_record, key, value)
+    db.commit()
+    db.refresh(cocktail_record)
+    return cocktail_record
 
 @app.delete("/cocktails/{cocktail_id}", status_code=204)
 def delete_cocktail(cocktail_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
@@ -197,6 +204,18 @@ def create_ingredient(ingredient: IngredientCreate, db: SessionLocal = Depends(g
     db.refresh(new_ingredient)
     return new_ingredient
 
+@app.put("/ingredients/{ingredient_id}", response_model=IngredientResponse)
+def update_ingredient(ingredient_id: uuid.UUID, ingredient: IngredientCreate, db: SessionLocal = Depends(get_db)):
+    ingredient_record = db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
+    if not ingredient_record:
+        raise HTTPException(status_code=404, detail="Ingrédient non trouvé")
+    update_data = ingredient.dict()
+    for key, value in update_data.items():
+        setattr(ingredient_record, key, value)
+    db.commit()
+    db.refresh(ingredient_record)
+    return ingredient_record
+
 @app.delete("/ingredients/{ingredient_id}", status_code=204)
 def delete_ingredient(ingredient_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
     ingredient = db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
@@ -218,6 +237,18 @@ def create_user(user: UserCreate, db: SessionLocal = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+@app.put("/users/{user_id}", response_model=UserResponse)
+def update_user(user_id: uuid.UUID, user: UserCreate, db: SessionLocal = Depends(get_db)):
+    user_record = db.query(User).filter(User.id == user_id).first()
+    if not user_record:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    update_data = user.dict()
+    for key, value in update_data.items():
+        setattr(user_record, key, value)
+    db.commit()
+    db.refresh(user_record)
+    return user_record
 
 @app.delete("/users/{user_id}", status_code=204)
 def delete_user(user_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
@@ -241,6 +272,18 @@ def create_rating(rating: RatingsCreate, db: SessionLocal = Depends(get_db)):
     db.refresh(new_rating)
     return new_rating
 
+@app.put("/ratings/{rating_id}", response_model=RatingsResponse)
+def update_rating(rating_id: uuid.UUID, rating: RatingsCreate, db: SessionLocal = Depends(get_db)):
+    rating_record = db.query(Ratings).filter(Ratings.id == rating_id).first()
+    if not rating_record:
+        raise HTTPException(status_code=404, detail="Évaluation non trouvée")
+    update_data = rating.dict()
+    for key, value in update_data.items():
+        setattr(rating_record, key, value)
+    db.commit()
+    db.refresh(rating_record)
+    return rating_record
+
 @app.delete("/ratings/{rating_id}", status_code=204)
 def delete_rating(rating_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
     rating = db.query(Ratings).filter(Ratings.id == rating_id).first()
@@ -254,6 +297,18 @@ def delete_rating(rating_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
 @app.get("/favorites", response_model=list[FavoritesResponse])
 def get_favorites(db: SessionLocal = Depends(get_db)):
     return db.query(Favorites).all()
+
+@app.put("/favorites/{favorite_id}", response_model=FavoritesResponse)
+def update_favorite(favorite_id: uuid.UUID, favorite: FavoritesCreate, db: SessionLocal = Depends(get_db)):
+    favorite_record = db.query(Favorites).filter(Favorites.id == favorite_id).first()
+    if not favorite_record:
+        raise HTTPException(status_code=404, detail="Favori non trouvé")
+    update_data = favorite.dict()
+    for key, value in update_data.items():
+        setattr(favorite_record, key, value)
+    db.commit()
+    db.refresh(favorite_record)
+    return favorite_record
 
 @app.post("/favorites", response_model=FavoritesResponse)
 def create_favorite(favorite: FavoritesCreate, db: SessionLocal = Depends(get_db)):
@@ -276,6 +331,19 @@ def delete_favorite(favorite_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
 @app.get("/user_ingredients", response_model=list[UserIngredientResponse])
 def get_user_ingredients(db: SessionLocal = Depends(get_db)):
     return db.query(User_ingredient).all()
+
+@app.put("/user_ingredients/{user_ingredient_id}", response_model=UserIngredientResponse)
+def update_user_ingredient(user_ingredient_id: uuid.UUID, user_ingredient: UserIngredientCreate, db: SessionLocal = Depends(get_db)):
+    user_ingredient_record = db.query(User_ingredient).filter(User_ingredient.id == user_ingredient_id).first()
+    if not user_ingredient_record:
+        raise HTTPException(status_code=404, detail="Ingrédient de l'utilisateur non trouvé")
+    update_data = user_ingredient.dict()
+    for key, value in update_data.items():
+        setattr(user_ingredient_record, key, value)
+    db.commit()
+    db.refresh(user_ingredient_record)
+    return user_ingredient_record
+
 
 @app.post("/user_ingredients", response_model=UserIngredientResponse)
 def create_user_ingredient(user_ingredient: UserIngredientCreate, db: SessionLocal = Depends(get_db)):
@@ -307,6 +375,18 @@ def create_cocktail_ingredient(cocktail_ingredient: CocktailIngredientCreate, db
     db.refresh(new_cocktail_ingredient)
     return new_cocktail_ingredient
 
+@app.put("/cocktail_ingredients/{cocktail_ingredient_id}", response_model=CocktailIngredientResponse)
+def update_cocktail_ingredient(cocktail_ingredient_id: uuid.UUID, cocktail_ingredient: CocktailIngredientCreate, db: SessionLocal = Depends(get_db)):
+    cocktail_ingredient_record = db.query(Cocktail_ingredient).filter(Cocktail_ingredient.id == cocktail_ingredient_id).first()
+    if not cocktail_ingredient_record:
+        raise HTTPException(status_code=404, detail="Ingrédient du cocktail non trouvé")
+    update_data = cocktail_ingredient.dict()
+    for key, value in update_data.items():
+        setattr(cocktail_ingredient_record, key, value)
+    db.commit()
+    db.refresh(cocktail_ingredient_record)
+    return cocktail_ingredient_record
+
 @app.delete("/cocktail_ingredients/{cocktail_ingredient_id}", status_code=204)
 def delete_cocktail_ingredient(cocktail_ingredient_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
     cocktail_ingredient = db.query(Cocktail_ingredient).filter(Cocktail_ingredient.id == cocktail_ingredient_id).first()
@@ -320,3 +400,5 @@ if __name__ == "__main__":
     import uvicorn
     Base.metadata.create_all(bind=engine)  # Assure la création des tables
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
+

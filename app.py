@@ -1,219 +1,156 @@
-from fastapi import FastAPI, HTTPException, Depends
+# app.py
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
-from sqlalchemy import create_engine, Column, String, Text, ForeignKey, Numeric, UUID
+from sqlalchemy import create_engine, Column, String, Text, ForeignKey, DECIMAL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
-from typing import Optional, List
-import uuid
+from uuid import uuid4
 
-DATABASE_URL = "postgresql://user:password@db/cocktail_db"  
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+DATABASE_URL = "postgresql://admin:Ynov2025@db/cocktail_db"
+
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-class Cocktail_ingredient(Base):
-    __tablename__ = "cocktail_ingredients"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    cocktail_id = Column(UUID(as_uuid=True), ForeignKey("cocktails.id"))
-    ingredient_id = Column(UUID(as_uuid=True), ForeignKey("ingredients.id"))
-    quantity = Column(Numeric)
-
+# Modèles de données
 class Cocktail(Base):
     __tablename__ = "cocktails"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    name = Column(String)
     description = Column(Text)
     image = Column(String)
     recipe = Column(Text)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-
-class Favorites(Base):
-    __tablename__ = "favorites"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    cocktail_id = Column(UUID(as_uuid=True), ForeignKey("cocktails.id"))
-
-class Ingredient(Base):
-    __tablename__ = "ingredients"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
-    unit = Column(String)
-
-class Ratings(Base):
-    __tablename__ = "ratings"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    cocktail_id = Column(UUID(as_uuid=True), ForeignKey("cocktails.id"))
-    rating = Column(Numeric)
-
-class User_ingredient(Base):
-    __tablename__ = "user_ingredients"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    ingredient_id = Column(UUID(as_uuid=True), ForeignKey("ingredients.id"))
+    user_id = Column(String, ForeignKey("users.id"))
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String, nullable=False, unique=True)
-    password = Column(String, nullable=False)
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    email = Column(String)
+    password = Column(String)
     name = Column(String)
 
-class CocktailCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    image: Optional[str] = None
-    recipe: Optional[str] = None
-    user_id: uuid.UUID
+class Ingredient(Base):
+    __tablename__ = "ingredients"
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    name = Column(String)
+    unit = Column(String)
 
-class CocktailResponse(BaseModel):
-    id: uuid.UUID
-    name: str
-    description: Optional[str]
-    image: Optional[str]
-    recipe: Optional[str]
+class CocktailIngredient(Base):
+    __tablename__ = "cocktail_ingredients"
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    cocktail_id = Column(String, ForeignKey("cocktails.id"))
+    ingredient_id = Column(String, ForeignKey("ingredients.id"))
+    quantity = Column(DECIMAL)
 
-class IngredientCreate(BaseModel):
-    name: str
-    unit: Optional[str] = None
+class Favorite(Base):
+    __tablename__ = "favorites"
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.id"))
+    cocktail_id = Column(String, ForeignKey("cocktails.id"))
 
-class IngredientResponse(BaseModel):
-    id: uuid.UUID
-    name: str
-    unit: Optional[str]
+class UserIngredient(Base):
+    __tablename__ = "user_ingredients"
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.id"))
+    ingredient_id = Column(String, ForeignKey("ingredients.id"))
 
-class UserCreate(BaseModel):
-    email: str
-    password: str
-    name: Optional[str] = None
+class Rating(Base):
+    __tablename__ = "ratings"
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    user_id = Column(String, ForeignKey("users.id"))
+    cocktail_id = Column(String, ForeignKey("cocktails.id"))
+    rating = Column(DECIMAL)
 
-class UserResponse(BaseModel):
-    id: uuid.UUID
-    email: str
-    name: Optional[str]
-
-class RatingsCreate(BaseModel):
-    user_id: uuid.UUID
-    cocktail_id: uuid.UUID
-    rating: float
-
-class RatingsResponse(BaseModel):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    cocktail_id: uuid.UUID
-    rating: float
-
-class FavoritesCreate(BaseModel):
-    user_id: uuid.UUID
-    cocktail_id: uuid.UUID
-
-class FavoritesResponse(BaseModel):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    cocktail_id: uuid.UUID
-
-class UserIngredientCreate(BaseModel):
-    user_id: uuid.UUID
-    ingredient_id: uuid.UUID
-
-class UserIngredientResponse(BaseModel):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    ingredient_id: uuid.UUID
-
-class CocktailIngredientCreate(BaseModel):
-    cocktail_id: uuid.UUID
-    ingredient_id: uuid.UUID
-    quantity: float
-
-class CocktailIngredientResponse(BaseModel):
-    id: uuid.UUID
-    cocktail_id: uuid.UUID
-    ingredient_id: uuid.UUID
-    quantity: float
-
-# Initialisation de l'application
 app = FastAPI()
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Route pour la page d'accueil
-@app.get("/")
-def read_root():
-    return {"message": "Bienvenue sur l'application Cocktail Odyssey!"}
+# Routes pour récupérer les données
+@app.get("/api/cocktails")
+def read_cocktails():
+    db = SessionLocal()
+    cocktails = db.query(Cocktail).all()
+    return cocktails
 
-# Route pour la page HTML d'accueil
-@app.get("/home")
-def home():
-    return FileResponse("static/index.html")
+@app.get("/api/users")
+def read_users():
+    db = SessionLocal()
+    users = db.query(User).all()
+    return users
 
-# Route pour créer un utilisateur
-@app.post("/users", response_model=UserResponse)
-def create_user(user: UserCreate, db: SessionLocal = Depends(get_db)):
-    new_user = User(**user.dict())
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+@app.get("/api/ingredients")
+def read_ingredients():
+    db = SessionLocal()
+    ingredients = db.query(Ingredient).all()
+    return ingredients
 
-# Route pour obtenir la liste des utilisateurs
-@app.get("/users", response_model=List[UserResponse])
-def get_users(db: SessionLocal = Depends(get_db)):
-    return db.query(User).all()
+@app.get("/api/cocktail-ingredients")
+def read_cocktail_ingredients():
+    db = SessionLocal()
+    cocktail_ingredients = db.query(CocktailIngredient).all()
+    return cocktail_ingredients
 
-# Route pour créer un cocktail
-@app.post("/cocktails", response_model=CocktailResponse)
-def create_cocktail(cocktail: CocktailCreate, db: SessionLocal = Depends(get_db)):
-    new_cocktail = Cocktail(**cocktail.dict())
-    db.add(new_cocktail)
-    db.commit()
-    db.refresh(new_cocktail)
-    return new_cocktail
+@app.get("/api/favorites")
+def read_favorites():
+    db = SessionLocal()
+    favorites = db.query(Favorite).all()
+    return favorites
 
-# Route pour obtenir la liste des cocktails
-@app.get("/cocktails", response_model=List[CocktailResponse])
-def get_cocktails(db: SessionLocal = Depends(get_db)):
-    return db.query(Cocktail).all()
+@app.get("/api/user-ingredients")
+def read_user_ingredients():
+    db = SessionLocal()
+    user_ingredients = db.query(UserIngredient).all()
+    return user_ingredients
 
-# Route pour obtenir les détails d'un cocktail
-@app.get("/cocktails/{cocktail_id}", response_model=CocktailResponse)
-def get_cocktail(cocktail_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
-    cocktail = db.query(Cocktail).filter(Cocktail.id == cocktail_id).first()
-    if not cocktail:
-        raise HTTPException(status_code=404, detail="Cocktail non trouvé")
-    return cocktail
+@app.get("/api/ratings")
+def read_ratings():
+    db = SessionLocal()
+    ratings = db.query(Rating).all()
+    return ratings
 
-# Route pour supprimer un cocktail
-@app.delete("/cocktails/{cocktail_id}", status_code=204)
-def delete_cocktail(cocktail_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
-    cocktail = db.query(Cocktail).filter(Cocktail.id == cocktail_id).first()
-    if not cocktail:
-        raise HTTPException(status_code=404, detail="Cocktail non trouvé")
-    db.delete(cocktail)
-    db.commit()
-    return {"message": "Cocktail supprimé avec succès"}
+# Routes pour servir les pages HTML
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    with open("static/index.html") as f:
+        return f.read()
 
-# Route pour supprimer un utilisateur
-@app.delete("/users/{user_id}", status_code=204)
-def delete_user(user_id: uuid.UUID, db: SessionLocal = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    db.delete(user)
-    db.commit()
-    return {"message": "Utilisateur supprimé avec succès"}
+@app.get("/cocktails", response_class=HTMLResponse)
+async def read_cocktails_page():
+    with open("static/cocktails.html") as f:
+        return f.read()
+
+@app.get("/users", response_class=HTMLResponse)
+async def read_users_page():
+    with open("static/users.html") as f:
+        return f.read()
+
+@app.get("/ingredients", response_class=HTMLResponse)
+async def read_ingredients_page():
+    with open("static/ingredients.html") as f:
+        return f.read()
+
+@app.get("/cocktail-ingredients", response_class=HTMLResponse)
+async def read_cocktail_ingredients_page():
+    with open("static/cocktail-ingredients.html") as f:
+        return f.read()
+
+@app.get("/favorites", response_class=HTMLResponse)
+async def read_favorites_page():
+    with open("static/favorites.html") as f:
+        return f.read()
+
+@app.get("/user-ingredients", response_class=HTMLResponse)
+async def read_user_ingredients_page():
+    with open("static/user-ingredients.html") as f:
+        return f.read()
+
+@app.get("/ratings", response_class=HTMLResponse)
+async def read_ratings_page():
+    with open("static/ratings.html") as f:
+        return f.read()
 
 if __name__ == "__main__":
-    import uvicorn
-    Base.metadata.create_all(bind=engine)  # Assure la création des tables
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    Base.metadata.create_all(bind=engine)

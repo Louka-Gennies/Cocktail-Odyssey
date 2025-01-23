@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Ingrédients d'Utilisateur</title>
+</head>
+<body>
+    <h1>Liste des Ingrédients d'Utilisateur</h1>
+    <div id="user-ingredients"></div>
+    <script>
+        fetch('/api/user-ingredients')
+            .then(response => response.json())
+            .then(data => {
+                const userIngredientsDiv = document.getElementById('user-ingredients');
+                userIngredientsDiv.innerHTML = '<ul>' + data.map(ui => `<li>User ID: ${ui.user_id}, Ingrédient ID: ${ui.ingredient_id}</li>`).join('') + '</ul>';
+            });
+    </script>
+</body>
+</html>

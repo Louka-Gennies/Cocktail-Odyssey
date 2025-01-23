@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Évaluations</title>
+</head>
+<body>
+    <h1>Liste des Évaluations</h1>
+    <div id="ratings"></div>
+    <script>
+        fetch('/api/ratings')
+            .then(response => response.json())
+            .then(data => {
+                const ratingsDiv = document.getElementById('ratings');
+                ratingsDiv.innerHTML = '<ul>' + data.map(rating => `<li>User ID: ${rating.user_id}, Cocktail ID: ${rating.cocktail_id}, Évaluation: ${rating.rating}</li>`).join('') + '</ul>';
+            });
+    </script>
+</body>
+</html>

@@ -2,12 +2,12 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:13
+    image: postgres:latest
     restart: always
     environment:
       POSTGRES_DB: cocktail_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: admin 
+      POSTGRES_PASSWORD: Ynov2025
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -19,7 +19,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgres://user:password@db/cocktail_db
+      DATABASE_URL: postgres://admin:Ynov2025@db/cocktail_db 
 
 volumes:
   postgres_data:

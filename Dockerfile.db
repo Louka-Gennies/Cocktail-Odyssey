@@ -1,9 +1,0 @@
-FROM postgres:latest
-
-# Copier les fichiers SQL
-COPY schema.sql /docker-entrypoint-initdb.d/01-schema.sql
-COPY cocktails-data.sql /docker-entrypoint-initdb.d/02-data.sql
-
-# S'assurer que les fichiers ont les bonnes permissions
-RUN chmod 644 /docker-entrypoint-initdb.d/01-schema.sql \
-    && chmod 644 /docker-entrypoint-initdb.d/02-data.sql 

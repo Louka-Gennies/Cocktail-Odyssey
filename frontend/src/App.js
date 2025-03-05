@@ -4,6 +4,7 @@ import './App.css';
 
 function App() {
   const [cocktails, setCocktails] = useState([]);
+  const [message, setMessage] = useState({ text: '', type: '' });
   const [newCocktail, setNewCocktail] = useState({
     name: '',
     description: '',
@@ -37,14 +38,16 @@ function App() {
     try {
       await axios.post('http://localhost:8000/cocktails/', newCocktail);
       fetchCocktails();
-      // Reset form
       setNewCocktail({
         name: '',
         description: '',
         ingredients: '',
         instructions: ''
       });
+      setMessage({ text: 'Cocktail ajouté avec succès !', type: 'success' });
+      setTimeout(() => setMessage({ text: '', type: '' }), 3000);
     } catch (error) {
+      setMessage({ text: 'Erreur lors de la création du cocktail', type: 'error' });
       console.error('Error creating cocktail:', error);
     }
   };
@@ -52,6 +55,12 @@ function App() {
   return (
     <div className="App">
       <h1>Cocktail Manager</h1>
+      
+      {message.text && (
+        <div className={`message ${message.type}`}>
+          {message.text}
+        </div>
+      )}
       
       <form className="cocktail-form" onSubmit={handleSubmit}>
         <input

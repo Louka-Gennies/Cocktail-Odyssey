@@ -15,14 +15,16 @@ services:
     command: sh -c "pip install . && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
-    build: 
-      context: ./frontend
+    build: ./frontend
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true
 
   db:
     image: postgres:13

@@ -18,6 +18,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def read_root():
+    return {"message": "Bienvenue sur l'API Cocktails"}
+
 @app.post("/cocktails/", response_model=schemas.Cocktail)
 def create_cocktail(cocktail: schemas.CocktailCreate, db: Session = Depends(get_db)):
     return crud.create_cocktail(db=db, cocktail=cocktail)

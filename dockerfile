@@ -2,9 +2,16 @@ FROM python:3.9
 
 WORKDIR /app
 
+# Créer le répertoire pour la base de données
+RUN mkdir -p /app/data
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . .
 
-RUN pip install --no-cache-dir fastapi[all] sqlalchemy psycopg2-binary
+# Mettre à jour les permissions
+RUN chmod -R 777 /app/data
 
 EXPOSE 8000
 

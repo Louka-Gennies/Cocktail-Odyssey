@@ -1,25 +1,13 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:latest
-    restart: always
-    environment:
-      POSTGRES_DB: cocktail_db
-      POSTGRES_USER: admin 
-      POSTGRES_PASSWORD: Ynov2025
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   web:
     build: .
     restart: always
     ports:
       - "8000:8000"
-    depends_on:
-      - db
-    environment:
-      DATABASE_URL: postgres://admin:Ynov2025@db/cocktail_db 
+    volumes:
+      - sqlite_data:/app/data
 
 volumes:
-  postgres_data:
+  sqlite_data:

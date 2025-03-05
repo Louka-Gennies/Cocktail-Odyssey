@@ -7,10 +7,16 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
 from uuid import uuid4
+from typing import Optional
+import os
 
-DATABASE_URL = "postgresql://admin:Ynov2025@db/cocktail_db"
+# Configuration de la base de données
+DATABASE_URL = "sqlite:///./data/cocktails.db"  # Changé pour utiliser le dossier data
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -63,6 +69,41 @@ class Rating(Base):
     cocktail_id = Column(String, ForeignKey("cocktails.id"))
     rating = Column(DECIMAL)
 
+# Ajoutez ces classes Pydantic pour la validation des données d'entrée
+class CocktailInput(BaseModel):
+    name: str
+    description: str
+    image: str
+    recipe: str
+    user_id: Optional[str] = None
+
+class UserInput(BaseModel):
+    email: str
+    password: str
+    name: str
+
+class IngredientInput(BaseModel):
+    name: str
+    unit: str
+
+class CocktailIngredientInput(BaseModel):
+    cocktail_id: str
+    ingredient_id: str
+    quantity: float
+
+class FavoriteInput(BaseModel):
+    user_id: str
+    cocktail_id: str
+
+class UserIngredientInput(BaseModel):
+    user_id: str
+    ingredient_id: str
+
+class RatingInput(BaseModel):
+    user_id: str
+    cocktail_id: str
+    rating: float
+
 app = FastAPI()
 
 # Serve static files
@@ -77,25 +118,33 @@ def read_cocktails():
     return cocktails
 
 @app.post("/api/cocktails")
-def create_cocktail(cocktail: Cocktail):
+def create_cocktail(cocktail_data: CocktailInput):
     db = SessionLocal()
+    cocktail = Cocktail(
+        name=cocktail_data.name,
+        description=cocktail_data.description,
+        image=cocktail_data.image,
+        recipe=cocktail_data.recipe,
+        user_id=cocktail_data.user_id
+    )
     db.add(cocktail)
     db.commit()
     db.refresh(cocktail)
-    return cocktail
+    return cocktail_to_dict(cocktail)
 
 @app.put("/api/cocktails/{cocktail_id}")
-def update_cocktail(cocktail_id: str, cocktail: Cocktail):
+def update_cocktail(cocktail_id: str, cocktail_data: CocktailInput):
     db = SessionLocal()
     db_cocktail = db.query(Cocktail).filter(Cocktail.id == cocktail_id).first()
     if db_cocktail:
-        db_cocktail.name = cocktail.name
-        db_cocktail.description = cocktail.description
-        db_cocktail.image = cocktail.image
-        db_cocktail.recipe = cocktail.recipe
+        db_cocktail.name = cocktail_data.name
+        db_cocktail.description = cocktail_data.description
+        db_cocktail.image = cocktail_data.image
+        db_cocktail.recipe = cocktail_data.recipe
+        db_cocktail.user_id = cocktail_data.user_id
         db.commit()
         db.refresh(db_cocktail)
-    return db_cocktail
+    return cocktail_to_dict(db_cocktail)
 
 @app.delete("/api/cocktails/{cocktail_id}")
 def delete_cocktail(cocktail_id: str):
@@ -113,24 +162,29 @@ def read_users():
     return users
 
 @app.post("/api/users")
-def create_user(user: User):
+def create_user(user_data: UserInput):
     db = SessionLocal()
+    user = User(
+        email=user_data.email,
+        password=user_data.password,
+        name=user_data.name
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+    return user_to_dict(user)
 
 @app.put("/api/users/{user_id}")
-def update_user(user_id: str, user: User):
+def update_user(user_id: str, user_data: UserInput):
     db = SessionLocal()
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user:
-        db_user.email = user.email
-        db_user.password = user.password
-        db_user.name = user.name
+        db_user.email = user_data.email
+        db_user.password = user_data.password
+        db_user.name = user_data.name
         db.commit()
         db.refresh(db_user)
-    return db_user
+    return user_to_dict(db_user)
 
 @app.delete("/api/users/{user_id}")
 def delete_user(user_id: str):
@@ -148,23 +202,27 @@ def read_ingredients():
     return ingredients
 
 @app.post("/api/ingredients")
-def create_ingredient(ingredient: Ingredient):
+def create_ingredient(ingredient_data: IngredientInput):
     db = SessionLocal()
+    ingredient = Ingredient(
+        name=ingredient_data.name,
+        unit=ingredient_data.unit
+    )
     db.add(ingredient)
     db.commit()
     db.refresh(ingredient)
-    return ingredient
+    return ingredient_to_dict(ingredient)
 
 @app.put("/api/ingredients/{ingredient_id}")
-def update_ingredient(ingredient_id: str, ingredient: Ingredient):
+def update_ingredient(ingredient_id: str, ingredient_data: IngredientInput):
     db = SessionLocal()
     db_ingredient = db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
     if db_ingredient:
-        db_ingredient.name = ingredient.name
-        db_ingredient.unit = ingredient.unit
+        db_ingredient.name = ingredient_data.name
+        db_ingredient.unit = ingredient_data.unit
         db.commit()
         db.refresh(db_ingredient)
-    return db_ingredient
+    return ingredient_to_dict(db_ingredient)
 
 @app.delete("/api/ingredients/{ingredient_id}")
 def delete_ingredient(ingredient_id: str):
@@ -182,22 +240,27 @@ def read_cocktail_ingredients():
     return cocktail_ingredients
 
 @app.post("/api/cocktail-ingredients")
-def create_cocktail_ingredient(cocktail_ingredient: CocktailIngredient):
+def create_cocktail_ingredient(cocktail_ingredient_data: CocktailIngredientInput):
     db = SessionLocal()
+    cocktail_ingredient = CocktailIngredient(
+        cocktail_id=cocktail_ingredient_data.cocktail_id,
+        ingredient_id=cocktail_ingredient_data.ingredient_id,
+        quantity=cocktail_ingredient_data.quantity
+    )
     db.add(cocktail_ingredient)
     db.commit()
     db.refresh(cocktail_ingredient)
-    return cocktail_ingredient
+    return cocktail_ingredient_to_dict(cocktail_ingredient)
 
 @app.put("/api/cocktail-ingredients/{cocktail_ingredient_id}")
-def update_cocktail_ingredient(cocktail_ingredient_id: str, cocktail_ingredient: CocktailIngredient):
+def update_cocktail_ingredient(cocktail_ingredient_id: str, cocktail_ingredient_data: CocktailIngredientInput):
     db = SessionLocal()
     db_cocktail_ingredient = db.query(CocktailIngredient).filter(CocktailIngredient.id == cocktail_ingredient_id).first()
     if db_cocktail_ingredient:
-        db_cocktail_ingredient.quantity = cocktail_ingredient.quantity
+        db_cocktail_ingredient.quantity = cocktail_ingredient_data.quantity
         db.commit()
         db.refresh(db_cocktail_ingredient)
-    return db_cocktail_ingredient
+    return cocktail_ingredient_to_dict(db_cocktail_ingredient)
 
 @app.delete("/api/cocktail-ingredients/{cocktail_ingredient_id}")
 def delete_cocktail_ingredient(cocktail_ingredient_id: str):
@@ -215,12 +278,16 @@ def read_favorites():
     return favorites
 
 @app.post("/api/favorites")
-def create_favorite(favorite: Favorite):
+def create_favorite(favorite_data: FavoriteInput):
     db = SessionLocal()
+    favorite = Favorite(
+        user_id=favorite_data.user_id,
+        cocktail_id=favorite_data.cocktail_id
+    )
     db.add(favorite)
     db.commit()
     db.refresh(favorite)
-    return favorite
+    return favorite_to_dict(favorite)
 
 @app.delete("/api/favorites/{favorite_id}")
 def delete_favorite(favorite_id: str):
@@ -238,12 +305,16 @@ def read_user_ingredients():
     return user_ingredients
 
 @app.post("/api/user-ingredients")
-def create_user_ingredient(user_ingredient: UserIngredient):
+def create_user_ingredient(user_ingredient_data: UserIngredientInput):
     db = SessionLocal()
+    user_ingredient = UserIngredient(
+        user_id=user_ingredient_data.user_id,
+        ingredient_id=user_ingredient_data.ingredient_id
+    )
     db.add(user_ingredient)
     db.commit()
     db.refresh(user_ingredient)
-    return user_ingredient
+    return user_ingredient_to_dict(user_ingredient)
 
 @app.delete("/api/user-ingredients/{user_ingredient_id}")
 def delete_user_ingredient(user_ingredient_id: str):
@@ -261,22 +332,27 @@ def read_ratings():
     return ratings
 
 @app.post("/api/ratings")
-def create_rating(rating: Rating):
+def create_rating(rating_data: RatingInput):
     db = SessionLocal()
+    rating = Rating(
+        user_id=rating_data.user_id,
+        cocktail_id=rating_data.cocktail_id,
+        rating=rating_data.rating
+    )
     db.add(rating)
     db.commit()
     db.refresh(rating)
-    return rating
+    return rating_to_dict(rating)
 
 @app.put("/api/ratings/{rating_id}")
-def update_rating(rating_id: str, rating: Rating):
+def update_rating(rating_id: str, rating_data: RatingInput):
     db = SessionLocal()
     db_rating = db.query(Rating).filter(Rating.id == rating_id).first()
     if db_rating:
-        db_rating.rating = rating.rating
+        db_rating.rating = rating_data.rating
         db.commit()
         db.refresh(db_rating)
-    return db_rating
+    return rating_to_dict(db_rating)
 
 @app.delete("/api/ratings/{rating_id}")
 def delete_rating(rating_id: str):
@@ -328,5 +404,45 @@ async def read_ratings_page():
     with open("static/ratings.html") as f:
         return f.read()
 
+# Fonction d'initialisation de la base de données
+def init_db():
+    try:
+        # Créer le dossier data s'il n'existe pas
+        os.makedirs("./data", exist_ok=True)
+        
+        # Créer toutes les tables
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created successfully!")
+
+        # Insérer des données de test si la base est vide
+        db = SessionLocal()
+        if not db.query(User).first():  # Vérifie si la table users est vide
+            # Insérer les données de test ici
+            test_user = User(
+                id=str(uuid4()),
+                email="test@example.com",
+                password="password123",
+                name="Test User"
+            )
+            db.add(test_user)
+            db.commit()
+            print("Test data inserted successfully!")
+        db.close()
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
+# Initialiser la base de données au démarrage
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+
 if __name__ == "__main__":
-    Base.metadata.create_all(bind=engine)
+    init_db()
+
+# Après la création de l'engine
+try:
+    connection = engine.connect()
+    connection.close()
+    print("Database connection successful!")
+except Exception as e:
+    print(f"Database connection failed: {str(e)}")

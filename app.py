@@ -115,7 +115,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def read_cocktails():
     db = SessionLocal()
     cocktails = db.query(Cocktail).all()
-    return cocktails
+    return [cocktail_to_dict(cocktail) for cocktail in cocktails]
 
 @app.post("/api/cocktails")
 def create_cocktail(cocktail_data: CocktailInput):
@@ -159,7 +159,7 @@ def delete_cocktail(cocktail_id: str):
 def read_users():
     db = SessionLocal()
     users = db.query(User).all()
-    return users
+    return [user_to_dict(user) for user in users]
 
 @app.post("/api/users")
 def create_user(user_data: UserInput):
@@ -199,7 +199,7 @@ def delete_user(user_id: str):
 def read_ingredients():
     db = SessionLocal()
     ingredients = db.query(Ingredient).all()
-    return ingredients
+    return [ingredient_to_dict(ingredient) for ingredient in ingredients]
 
 @app.post("/api/ingredients")
 def create_ingredient(ingredient_data: IngredientInput):
@@ -237,7 +237,7 @@ def delete_ingredient(ingredient_id: str):
 def read_cocktail_ingredients():
     db = SessionLocal()
     cocktail_ingredients = db.query(CocktailIngredient).all()
-    return cocktail_ingredients
+    return [cocktail_ingredient_to_dict(ci) for ci in cocktail_ingredients]
 
 @app.post("/api/cocktail-ingredients")
 def create_cocktail_ingredient(cocktail_ingredient_data: CocktailIngredientInput):
@@ -275,7 +275,7 @@ def delete_cocktail_ingredient(cocktail_ingredient_id: str):
 def read_favorites():
     db = SessionLocal()
     favorites = db.query(Favorite).all()
-    return favorites
+    return [favorite_to_dict(favorite) for favorite in favorites]
 
 @app.post("/api/favorites")
 def create_favorite(favorite_data: FavoriteInput):
@@ -329,7 +329,7 @@ def delete_user_ingredient(user_ingredient_id: str):
 def read_ratings():
     db = SessionLocal()
     ratings = db.query(Rating).all()
-    return ratings
+    return [rating_to_dict(rating) for rating in ratings]
 
 @app.post("/api/ratings")
 def create_rating(rating_data: RatingInput):
@@ -446,3 +446,59 @@ try:
     print("Database connection successful!")
 except Exception as e:
     print(f"Database connection failed: {str(e)}")
+
+# Ajoutez ces fonctions de conversion après vos modèles
+def cocktail_to_dict(cocktail):
+    return {
+        "id": cocktail.id,
+        "name": cocktail.name,
+        "description": cocktail.description,
+        "image": cocktail.image,
+        "recipe": cocktail.recipe,
+        "user_id": cocktail.user_id
+    }
+
+def user_to_dict(user):
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "password": user.password  # Note: en production, ne jamais renvoyer le mot de passe
+    }
+
+def ingredient_to_dict(ingredient):
+    return {
+        "id": ingredient.id,
+        "name": ingredient.name,
+        "unit": ingredient.unit
+    }
+
+def cocktail_ingredient_to_dict(cocktail_ingredient):
+    return {
+        "id": cocktail_ingredient.id,
+        "cocktail_id": cocktail_ingredient.cocktail_id,
+        "ingredient_id": cocktail_ingredient.ingredient_id,
+        "quantity": float(cocktail_ingredient.quantity)
+    }
+
+def favorite_to_dict(favorite):
+    return {
+        "id": favorite.id,
+        "user_id": favorite.user_id,
+        "cocktail_id": favorite.cocktail_id
+    }
+
+def rating_to_dict(rating):
+    return {
+        "id": rating.id,
+        "user_id": rating.user_id,
+        "cocktail_id": rating.cocktail_id,
+        "rating": float(rating.rating)
+    }
+
+def user_ingredient_to_dict(user_ingredient):
+    return {
+        "id": user_ingredient.id,
+        "user_id": user_ingredient.user_id,
+        "ingredient_id": user_ingredient.ingredient_id
+    }

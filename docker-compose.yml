@@ -1,13 +1,35 @@
 version: '3.8'
 
 services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    restart: always
+    environment:
+      POSTGRES_DB: cocktail_db
+      POSTGRES_USER: admin 
+      POSTGRES_PASSWORD: Ynov2025
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d cocktail_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
     restart: always
     ports:
       - "8000:8000"
-    volumes:
-      - sqlite_data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://admin:Ynov2025@db:5432/cocktail_db
 
 volumes:
-  sqlite_data:
+  postgres_data:

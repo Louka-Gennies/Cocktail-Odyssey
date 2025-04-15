@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cocktail Odyssey</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>Cocktail Odyssey</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active" id="home-link">Accueil</a></li>
+                    <li><a href="#" id="my-cocktails-link">Mes Cocktails</a></li>
+                    <li><a href="#" id="create-cocktail-link">Créer un Cocktail</a></li>
+                </ul>
+            </nav>
+            <div class="auth-buttons">
+                <button id="login-btn" class="btn">Connexion</button>
+                <button id="register-btn" class="btn btn-primary">Inscription</button>
+                <div id="user-menu" class="hidden">
+                    <span id="user-name">Utilisateur</span>
+                    <button id="logout-btn" class="btn">Déconnexion</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Home Page / Cocktail List -->
+            <section id="cocktail-list" class="page active">
+                <div class="page-header">
+                    <h2>Découvrez nos cocktails</h2>
+                    <div class="search-bar">
+                        <input type="text" id="search-input" placeholder="Rechercher un cocktail...">
+                        <button id="search-btn"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+                
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">Tous</button>
+                    <button class="filter-btn" data-filter="public">Publics</button>
+                    <button class="filter-btn" data-filter="private">Privés</button>
+                </div>
+                
+                <div id="cocktails-container" class="cocktail-grid">
+                    <!-- Cocktails will be loaded here -->
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Chargement des cocktails...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cocktail Detail Page -->
+            <section id="cocktail-detail" class="page">
+                <div class="back-button">
+                    <button id="back-to-list" class="btn"><i class="bi bi-arrow-left"></i> Retour</button>
+                </div>
+                <div id="cocktail-detail-content">
+                    <!-- Cocktail details will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Create/Edit Cocktail Page -->
+            <section id="cocktail-form" class="page">
+                <h2 id="form-title">Créer un nouveau cocktail</h2>
+                <form id="cocktail-create-form">
+                    <div class="form-group">
+                        <label for="cocktail-name">Nom du cocktail</label>
+                        <input type="text" id="cocktail-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cocktail-description">Description</label>
+                        <textarea id="cocktail-description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cocktail-image">URL de l'image</label>
+                        <input type="url" id="cocktail-image">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Visibilité</label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="visibility" value="true" checked> Public
+                            </label>
+                            <label>
+                                <input type="radio" name="visibility" value="false"> Privé
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Ingrédients</label>
+                        <div id="ingredients-list">
+                            <div class="ingredient-item">
+                                <input type="text" placeholder="Nom de l'ingrédient" class="ingredient-name" required>
+                                <input type="text" placeholder="Quantité" class="ingredient-quantity" required>
+                                <button type="button" class="remove-ingredient"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                        <button type="button" id="add-ingredient" class="btn">Ajouter un ingrédient</button>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" id="cancel-form" class="btn">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Login Form -->
+            <div id="login-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Connexion</h2>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email">Email</label>
+                            <input type="email" id="login-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Mot de passe</label>
+                            <input type="password" id="login-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Se connecter</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Inscription</h2>
+                    <form id="register-form">
+                        <div class="form-group">
+                            <label for="register-name">Nom</label>
+                            <input type="text" id="register-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">Email</label>
+                            <input type="email" id="register-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">Mot de passe</label>
+                            <input type="password" id="register-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">S'inscrire</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Cocktail Odyssey. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

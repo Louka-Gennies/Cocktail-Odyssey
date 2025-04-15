@@ -106,27 +106,6 @@ serve -s .
 - JSON Web Tokens (JWT) for authentication
 - bcryptjs for password hashing
 
-## Project Structure
-
-Cocktail-Odyssey/
-├── backend/
-│   ├── database/
-│   ├── routes/
-│   ├── .env
-│   ├── package.json
-│   └── server.js
-└── frontend/
-    ├── app.js
-    ├── index.html
-    ├── styles.css
-    └── package.json
-
-
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 ## Acknowledgments
 - Cocktail recipes and images are for demonstration purposes only
 - Icons provided by Bootstrap Icons
-
-This README provides a comprehensive overview of your Cocktail Odyssey project, including setup instructions, features, API endpoints, and the technology stack. You can customize it further by adding screenshots, more detailed installation instructions, or any other project-specific information.

@@ -31,6 +31,7 @@ The project is divided into two main parts:
 ```bash
 git clone https://github.com/yourusername/Cocktail-Odyssey.git
 cd Cocktail-Odyssey
+```
 2. Install backend dependencies:
 ```bash
 cd backend
@@ -44,6 +45,7 @@ npm install
  ```
 
 ### Configuration
+
 1. Backend configuration:
    - Create a .env file in the backend directory with the following content:
    ```plaintext
@@ -52,12 +54,15 @@ npm install
     ```
    
    - Replace your_secret_key with a secure random string
+
 ### Running the Application
+
 1. Start the backend server:
+
 ```bash
 cd backend
 npm run dev
- ```
+```
 2. Open a new terminal and serve the frontend:
 ```bash
 cd frontend
